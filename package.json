@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.3",
+    "koa": "^2.11.0",
+    "koa-bodyparser": "^4.2.1",
+    "random": "^2.1.1",
+    "request": "^2.88.0",
+    "sqlite3": "^4.1.1"
+  }
+}

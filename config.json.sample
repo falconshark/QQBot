@@ -1,0 +1,13 @@
+{
+  "weiboCookie": "",
+  "weiboGroup": [
+    {
+      "id": 123456789,
+      "type": "private"
+    },
+    {
+      "id": 123456789,
+      "type": "group"
+    }
+  ]
+}
