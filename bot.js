@@ -5,6 +5,7 @@ const bodyParser = require('koa-bodyparser');
 const sqlite3 = require("sqlite3").verbose();
 const QQ = require('./lib/qq');
 const Common = require('./lib/common');
+const NGA = require('./lib/nga');
 const Weibo = require('./lib/weibo');
 const DB = require('./lib/database');
 
@@ -42,6 +43,10 @@ app.use(async ctx => {
       case 'choose':
       _choose(senderId, messageType, messageContent);
       break;
+
+      case 'job':
+      _job(senderId, messageType, messageContent);
+      break;
     }
   }else{
     ctx.body = 'Please provide QQ message.';
@@ -55,7 +60,7 @@ _getFFWeibo(request, config);
 
 setInterval(function(){
   _getFFWeibo(request, config);
-}, 3600000);
+}, 600000);
 
 function _getHelp(senderId, messageType){
   let content = '目前指令：';
@@ -95,18 +100,40 @@ function _choose(senderId, messageType, messageContent){
   });
 }
 
+async function _job(senderId, messageType, messageContent){
+  const jobRegax = /^(\/job) ([\s\S]*)$/;
+  const optionsString = chooseRegax.exec(messageContent)[2];
+  const options = optionsString.split('|');
+}
+
 async function _getFFWeibo(request, config){
   const weiboPage = await Weibo.fetchFF(request, config);
   const latestWeibo = Weibo.parseFF(weiboPage);
-  const content = `${latestWeibo.content} \n 原文連結：https://weibo.cn/${latestWeibo.link}`;
+  const content = `${latestWeibo.content} \n 原文連結：https://weibo.cn/comment/${latestWeibo.id}`;
   const weiboGroup = config['weiboGroup'];
-  const weiboRecord = await DB.loadLatestRecord(db);
+  const weiboRecord = await DB.loadLatestRecord(db, latestWeibo.id);
+  console.log('Latest Weibo:' + latestWeibo.id);
+  console.log('Saved Weibo: ' + weiboRecord);
 
   for(let i = 0; i < weiboGroup.length; i++){
     const qq = weiboGroup[i].id;
     const type = weiboGroup[i].type;
-    if(!weiboRecord || weiboRecord != latestWeibo.id){
-      QQ.sendMessage(request, qq, type, content).then((result) => {
+    if(latestWeibo.id){
+      if(!weiboRecord || weiboRecord != latestWeibo.id){
+        QQ.sendMessage(request, qq, type, content).then((result) => {
+          //Only record first time
+          if(i === 0){
+            DB.saveWeiboRecord(db, latestWeibo.id);
+          }
+          console.log(result);
+        }).catch((err) => {
+          console.log(err);
+        });
+      }
+    }else{
+      const ownQQ = weiboGroup[0];
+      const errorMessage = '無法爬取內容，可能是Cookies已經過期，請更新！';
+      QQ.sendMessage(request, ownQQ, 'private', errorMessage).then((result) => {
         //Only record first time
         if(i === 0){
           DB.saveWeiboRecord(db, latestWeibo.id);
